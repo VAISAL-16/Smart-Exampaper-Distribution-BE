@@ -1,6 +1,6 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import { env } from "./config/env.js";
 import storeRoutes from "./routes/storeRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import centerRoutes from "./routes/centerRoutes.js";
@@ -8,18 +8,23 @@ import { requestContext } from "./middleware/requestContext.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorMiddleware.js";
 import { sendSuccess } from "./utils/apiResponse.js";
 
+const nodeEnv = process.env.NODE_ENV || "development";
+const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || "1mb";
+const corsOrigin = process.env.CORS_ORIGIN || "*";
+
+
 export const createApp = () => {
   const app = express();
   app.set("trust proxy", 1);
 
   app.use(
     cors({
-      origin: env.corsOrigin === "*" ? true : env.corsOrigin,
+      origin: corsOrigin === "*" ? true : corsOrigin,
       credentials: true
     })
   );
   app.use(requestContext);
-  app.use(express.json({ limit: env.requestBodyLimit }));
+  app.use(express.json({ limit: requestBodyLimit }));
 
   app.get("/", (_req, res) => {
     sendSuccess(res, { service: "Smart Exam Distribution API" }, "API running");
@@ -30,7 +35,7 @@ export const createApp = () => {
       res,
       {
         status: "ok",
-        environment: env.nodeEnv,
+        environment: nodeEnv,
         uptimeSeconds: Math.round(process.uptime())
       },
       "Health check passed"

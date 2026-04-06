@@ -1,5 +1,5 @@
+import "dotenv/config";
 import nodemailer from "nodemailer";
-import { env } from "../config/env.js";
 
 const buildTransport = () => {
   const host = process.env.SMTP_HOST;
@@ -22,15 +22,19 @@ const buildTransport = () => {
 const transporter = buildTransport();
 
 const sendViaEmailJs = async ({ to, subject, text, templateId }) => {
-  const resolvedTemplateId = templateId || env.emailJsTemplateId;
-  if (!env.emailJsServiceId || !resolvedTemplateId || !env.emailJsPublicKey) {
+  const resolvedTemplateId = templateId || process.env.EMAILJS_TEMPLATE_ID || "";
+  const emailJsServiceId = process.env.EMAILJS_SERVICE_ID || "";
+  const emailJsPublicKey = process.env.EMAILJS_PUBLIC_KEY || "";
+  const emailJsPrivateKey = process.env.EMAILJS_PRIVATE_KEY || "";
+
+  if (!emailJsServiceId || !resolvedTemplateId || !emailJsPublicKey) {
     return null;
   }
 
   const payload = {
-    service_id: env.emailJsServiceId,
+    service_id: emailJsServiceId,
     template_id: resolvedTemplateId,
-    user_id: env.emailJsPublicKey,
+    user_id: emailJsPublicKey,
     template_params: {
       to_email: to,
       email: to,
@@ -43,8 +47,8 @@ const sendViaEmailJs = async ({ to, subject, text, templateId }) => {
     }
   };
 
-  if (env.emailJsPrivateKey) {
-    payload.accessToken = env.emailJsPrivateKey;
+  if (emailJsPrivateKey) {
+    payload.accessToken = emailJsPrivateKey;
   }
 
   const response = await fetch("https://api.emailjs.com/api/v1.0/email/send", {

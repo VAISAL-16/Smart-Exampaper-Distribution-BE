@@ -1,5 +1,5 @@
+import "dotenv/config";
 import jwt from "jsonwebtoken";
-import { env } from "../config/env.js";
 
 export const createAuthToken = (user) =>
   jwt.sign(
@@ -8,8 +8,9 @@ export const createAuthToken = (user) =>
       email: user.email,
       role: user.role
     },
-    env.jwtSecret,
-    { expiresIn: env.jwtExpiresIn }
+    process.env.JWT_SECRET || "secure_exam_jwt_secret",
+    { expiresIn: process.env.JWT_EXPIRES_IN || "8h" }
   );
 
-export const verifyAuthToken = (token) => jwt.verify(token, env.jwtSecret);
+export const verifyAuthToken = (token) =>
+  jwt.verify(token, process.env.JWT_SECRET || "secure_exam_jwt_secret");

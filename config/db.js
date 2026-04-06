@@ -1,14 +1,18 @@
+import "dotenv/config";
 import mongoose from "mongoose";
-import { env } from "./env.js";
 
 const connectDB = async () => {
-  if (!env.mongoUrl) {
-    throw new Error("MONGO_URL is not configured");
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URL);
+    console.log("MongoDB Connected:", conn.connection.host);
+  } catch (err) {
+    console.error("❌ MongoDB Connection Failed:");
+    console.error("Name:", err.name);
+    console.error("Message:", err.message);
+    console.error("Code:", err.code);
+    console.error("Full Error:", err);
+    process.exit(1);
   }
-
-  const conn = await mongoose.connect(env.mongoUrl);
-  console.log(`MongoDB Connected: ${conn.connection.host}`);
-  return conn;
 };
 
 export default connectDB;

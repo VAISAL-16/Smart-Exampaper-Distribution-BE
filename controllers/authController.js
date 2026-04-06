@@ -1,3 +1,4 @@
+import "dotenv/config";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
@@ -8,19 +9,26 @@ import AuthOtp from "../models/AuthOtp.js";
 import { sendEmail } from "../services/emailService.js";
 import { sendSms, maskPhone, normalizePhone } from "../services/smsService.js";
 import { createAuthToken } from "../utils/generateToken.js";
-import { env } from "../config/env.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const OTP_SECRET = process.env.OTP_SECRET || "secure_exam_otp_secret";
-const OTP_TTL_MINUTES = env.otpTtlMinutes;
-const RESET_TOKEN_TTL_MINUTES = env.resetTokenTtlMinutes;
-const STATIC_OTP = env.commonOtp;
-const loginRequestWindowMs = env.loginRateLimitWindowMs;
-const loginRequestMax = env.loginRateLimitMax;
-const otpVerifyWindowMs = env.otpVerifyRateLimitWindowMs;
-const otpVerifyMax = env.otpVerifyRateLimitMax;
-const forgotRequestWindowMs = env.forgotRateLimitWindowMs;
-const forgotRequestMax = env.forgotRateLimitMax;
+const toNumber = (value, fallback) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+const toBool = (value, fallback = false) => {
+  if (value === undefined) return fallback;
+  return String(value).trim().toLowerCase() === "true";
+};
+const OTP_TTL_MINUTES = toNumber(process.env.OTP_TTL_MINUTES, 10);
+const RESET_TOKEN_TTL_MINUTES = toNumber(process.env.RESET_TOKEN_TTL_MINUTES, 10);
+const STATIC_OTP = String(process.env.COMMON_OTP || "123456").trim();
+const loginRequestWindowMs = toNumber(process.env.LOGIN_RATE_LIMIT_WINDOW_MS, 10 * 60 * 1000);
+const loginRequestMax = toNumber(process.env.LOGIN_RATE_LIMIT_MAX, 5);
+const otpVerifyWindowMs = toNumber(process.env.OTP_VERIFY_RATE_LIMIT_WINDOW_MS, 10 * 60 * 1000);
+const otpVerifyMax = toNumber(process.env.OTP_VERIFY_RATE_LIMIT_MAX, 8);
+const forgotRequestWindowMs = toNumber(process.env.FORGOT_RATE_LIMIT_WINDOW_MS, 15 * 60 * 1000);
+const forgotRequestMax = toNumber(process.env.FORGOT_RATE_LIMIT_MAX, 4);
 const requestRateStore = new Map();
 
 const defaultAdminEmail = (process.env.ADMIN_EMAIL || "vaisal16122005@gmail.com").trim().toLowerCase();
@@ -98,7 +106,7 @@ const findUserByEmail = async (email) => {
 };
 
 const generateOtp = () => {
-  if (env.useStaticOtp) {
+  if (toBool(process.env.USE_STATIC_OTP, false)) {
     return STATIC_OTP;
   }
   return String(crypto.randomInt(100000, 1000000));
@@ -303,7 +311,7 @@ export const requestLoginOtp = async (req, res) => {
       subject: "SecureExam Login Verification Code",
       text: `Your login OTP is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`,
       html: `<p>Your login OTP is <b>${otp}</b>.</p><p>Expires in ${OTP_TTL_MINUTES} minutes.</p>`,
-      templateId: env.emailJsLoginTemplateId || env.emailJsTemplateId
+      templateId: process.env.EMAILJS_LOGIN_TEMPLATE_ID || process.env.EMAILJS_TEMPLATE_ID
     });
 
     return res.json({
@@ -458,7 +466,7 @@ export const requestForgotPasswordOtp = async (req, res) => {
         subject: "SecureExam Password Recovery OTP",
         text: `Your password recovery OTP is ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`,
         html: `<p>Your password recovery OTP is <b>${otp}</b>.</p><p>Expires in ${OTP_TTL_MINUTES} minutes.</p>`,
-        templateId: env.emailJsForgotTemplateId || env.emailJsTemplateId
+        templateId: process.env.EMAILJS_FORGOT_TEMPLATE_ID || process.env.EMAILJS_TEMPLATE_ID
       });
     }
 
